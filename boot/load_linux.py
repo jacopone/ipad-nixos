@@ -45,9 +45,10 @@ PONGO_ERRORS = (
 NO_LINUX_SUPPORT = """
 The pongoOS running on the device does not provide the Linux boot commands
 (linux_cmdline, fdt, bootl). They exist in pongoOS releases up to tag 2.6.3,
-such as boot/Pongo.bin (PongoOS-2.6.1-742d92a0). Later builds, including the
-ones shipped by palera1n and HoolockLinux, removed them and boot Linux
-through m1n1 (`bootm`) instead; they still report version 2.6.3-<commit>.
+such as boot/Pongo.bin (PongoOS-2.6.1-742d92a0). Later builds removed them
+and boot Linux through m1n1 (`bootm`); they still report version
+2.6.3-<commit>. The Pongo.bin files shipped by palera1n and HoolockLinux
+lack them.
 Load boot/Pongo.bin. See README.md, "Troubleshooting".
 """
 

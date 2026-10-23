@@ -240,14 +240,17 @@ Verified against the PongoOS source and the binaries themselves (2026-10-23):
 |---------------|----------------|----------------|------------|
 | `boot/Pongo.bin` ([2.6.1 release](https://github.com/checkra1n/PongoOS/releases/tag/2.6.1) asset, 254032 bytes) | `PongoOS-2.6.1-742d92a0` | `linux_cmdline`, `fdt`, `ramdisk`, `bootl` | `bootl` |
 | palera1n (`cdn.nickchan.lol/palera1n/artifacts/kpf/iOS15/Pongo.bin`) | `PongoOS-2.6.3-e98323f8` | none | `bootm` (m1n1) |
-| HoolockLinux (`docs/binaries/Pongo.bin`, commit bb492b0, 2025-02-22) | `PongoOS-2.6.3-bb492b00` | none | `bootm` (m1n1) |
+| HoolockLinux (`docs/binaries/Pongo.bin`, built from PongoOS `bb492b0`, 2025-02-22) | `PongoOS-2.6.3-bb492b00` | none | `bootm` (m1n1) |
 
-- In 2.6.1, `linux_commands_register()` runs in `shell_main()` before `usbloader_init()`
-  (`src/shell/main.c`), so the commands are always registered before USB input is accepted.
+- In 2.6.1, `shell_main()` (`src/shell/main.c`) calls `linux_commands_register()` before
+  `command_init()` starts the shell loop (`command_main`), so the commands are always
+  registered before any command is processed.
   `Bad command: linux_cmdline` therefore means the device runs a build without them.
 - Commit [455eabb](https://github.com/checkra1n/PongoOS/commit/455eabb1bce5bb695ca3192294823849605f209e)
   (2024-09-14, `iOS15` branch) removed `src/modules/linux` and `scripts/load_linux.py`, with
-  the message "Sandcastle never worked on pongoOS 2.6.x. Wash it away." The removal is not in
+  the message "Sandcastle never worked on pongoOS 2.6.x. Wash it away." The HoolockLinux build
+  includes this commit; palera1n's build commit (`e98323f8`) is not public, but the binary
+  lacks the commands as well. The removal is not in
   any tag: the 2.6.3 tag still has the commands, but builds from later `iOS15` commits also
   report `2.6.3-<commit>` (the Makefile hardcodes the prefix). The version number alone does
   not tell the two apart; the `Bad command:` reply does.
