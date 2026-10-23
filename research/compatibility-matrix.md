@@ -289,6 +289,7 @@ Linux (upstream 6.18), which A7-A10X devices lack.
 | Display pipe (proper DRM/KMS) | TBA | Currently simple-framebuffer only |
 | Camera | TBA | No driver yet |
 | NVMe storage | A11 only (6.18) | Not available on A7-A10X |
+| ANS1 storage (A7, A8, A8X) | WIP (HoolockLinux `ans1` branch) | Out of tree, see driver-gap.md |
 
 ---
 

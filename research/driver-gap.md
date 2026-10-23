@@ -1,7 +1,7 @@
 # Driver Gap Analysis: iPad Air 2 (A8X) Hardware
 
 Per-subsystem analysis of iPad Air 2 hardware chips and their Linux driver status.
-Research conducted February 2026.
+Research conducted February 2026. Storage section revised 2026-10-23.
 
 ## Summary Matrix
 
@@ -16,7 +16,7 @@ Research conducted February 2026.
 | USB | Synopsys DWC2 OTG | dwc2 | Likely working | Low-Medium |
 | Bluetooth | Broadcom (in Murata module) | btbcm / hci_bcm | Partial | Medium |
 | Sensors | Unknown (likely InvenSense/Bosch) | Unknown | Unknown | Medium |
-| Storage/NAND | Apple proprietary FTL | None | None | Very High |
+| Storage/NAND | Apple ANS1 storage co-processor | asp (HoolockLinux `ans1` branch) | WIP, out of tree | High |
 
 ---
 
@@ -565,14 +565,51 @@ Sources:
 ### Hardware
 
 - **NAND flash**: SK Hynix (16/64/128GB depending on model)
-- **Controller**: Apple proprietary NAND controller (integrated in A8X)
-- **Flash Translation Layer**: Apple proprietary (derived from Samsung Whimory FTL)
+- **Controller**: ANS1 storage co-processor (ASP), an RTKit core with an AKF mailbox,
+  integrated in the SoC (A7, A8, A8X)
+- **Flash Translation Layer**: Apple proprietary (derived from Samsung Whimory FTL), runs in
+  the ANS1 firmware
 - **Encryption**: Hardware AES-256 encryption, UID-keyed, between NAND and DRAM
 - **File system**: APFS (on iOS 10.3+) or HFS+ (older iOS)
 
 ### Linux Driver Status
 
-**Status: None**
+**Status: WIP, out of tree (HoolockLinux `ans1` branch). Not integrated or tested here.**
+
+HoolockLinux has a driver for the ANS1 storage processor (reported in issue #2), verified
+2026-10-23:
+
+- **Where**: branch [`ans1`](https://github.com/HoolockLinux/linux/tree/ans1) of
+  HoolockLinux/linux, head `ed8528f482a5` (2026-09-03), all commits by Nick Chan. The branch
+  is 27 commits ahead of the default `hoolock` branch and not merged into it.
+- **Files**: `drivers/block/asp.c` (driver, "WIP: ANS1 driver", 3b237c39df79), Kconfig
+  `APPLE_ASP` ("found on devices with Apple A7, A8, A8X SoCs"), binding
+  `Documentation/devicetree/bindings/block/apple,s5l8960x-ans.yaml`
+  (`apple,s5l8960x-ans`, `apple,t7000-ans`, `apple,t7001-ans`), plus RTKit protocol v10 and
+  64-bit AKF mailbox support it depends on.
+- **A8X**: the T7001 device tree nodes come from a commit titled
+  "[WIP] arm64: dts: apple: t7001: Add ASP nodes" (32c5dac3841f); `t7001-air2.dtsi` enables
+  the node for the iPad Air 2.
+- **HoolockLinux status**: [features/A8.md](https://github.com/HoolockLinux/docs/blob/HEAD/features/A8.md)
+  lists Internal Storage as WIP for A8 and A8X (docs commit 23ebe1fbc3, 2026-09-04,
+  "update a7/a8 internal storage to WIP"). A7 is also WIP; A11 uses the NVMe driver
+  upstream since Linux 6.18.
+
+How the driver works, from `asp.c`:
+
+- Linux talks to the ANS1 firmware over RTKit; the firmware implements the FTL, so Linux
+  does not reimplement it. The firmware is loaded by earlier boot stages, and the device
+  tree's `ans-firmware` reserved-memory region is "filled in by bootloader". In HoolockLinux
+  that is m1n1; the pongoOS `bootl` path used by this repository does not fill it.
+- I/O commands set `ASP_CMD_IO_FLAG_NO_ENCRYPTION`; per the driver's comment, without it the
+  data is transformed in 128-bit blocks, "so likely encryption". Decrypting existing iOS data
+  is not part of the driver.
+- The user area is writable after a write-unlock command. Auxiliary namespaces (LLB, FW,
+  NVRAM, SysCfg, ...) are exposed read-only because writing them can crash the controller
+  persistently; SysCfg is described as "unrecoverable even with DFU".
+
+Using it here requires the HoolockLinux kernel branch and the m1n1 boot path. Until then,
+the background below still describes why this repository boots from RAM.
 
 Apple's NAND storage subsystem is one of the most difficult components to support on Linux:
 
@@ -594,24 +631,27 @@ are unreadable.
 Even if a Linux NAND driver were written, the data on the NAND would be encrypted and
 inaccessible without cooperation from the AES engine and knowledge of the key hierarchy.
 
-**The practical solution: Do not use internal NAND.**
-All existing Linux-on-iPhone/iPad projects avoid the NAND entirely:
+**The practical solution so far: do not use internal NAND.**
+Linux-on-iPhone/iPad setups have avoided the NAND:
 - Boot from initramfs (everything in RAM)
 - Use USB networking for file transfer
 - Use NFS root over USB Ethernet
-- On A11 devices, HoolockLinux has tools for internal storage access (but this appears to
-  be device-specific and not documented for A8X)
+- On A11 devices, HoolockLinux supports internal storage through NVMe and ships
+  partitioning tools; for A7/A8/A8X the ANS1 driver above is WIP
 
 ### Estimated Effort
 
-Very High. Even with a working NAND driver, the encryption layer makes the existing iOS
-data inaccessible. For Linux use, the practical approach is to:
+High. A driver exists out of tree; the remaining work is the m1n1 boot path, a kernel
+built from the HoolockLinux branch, and hardware testing. Existing iOS data stays
+out of reach, and writes to the auxiliary namespaces can brick the device. Until the driver
+is usable here:
 1. Boot entirely from ramdisk (initramfs)
 2. Use USB Ethernet for network storage
-3. Possibly use raw NAND access (bypassing FTL) to create a Linux partition, but this
-   risks bricking the device if the FTL metadata is corrupted
 
 Sources:
+- https://github.com/HoolockLinux/linux/tree/ans1 (head ed8528f482a5, 2026-09-03)
+- https://github.com/HoolockLinux/linux/blob/ans1/drivers/block/asp.c
+- https://github.com/HoolockLinux/docs/blob/HEAD/features/A8.md
 - https://www.theiphonewiki.com/wiki/NAND
 - https://news.ycombinator.com/item?id=12979195
 - http://esec-lab.sogeti.com/posts/2012/06/28/low-level-ios-forensics.html

@@ -230,16 +230,16 @@ Apple internal identifiers: iPad5,3 (j81, Wi-Fi) and iPad5,4 (j82, Cellular).
 
 - **Chip**: SK Hynix H2JTDG8UD1BMR (in the 16 GB model; other models use different capacities)
 - **Capacity**: 128 Gb (16 GB) per chip (model-dependent: 16/32/64/128 GB SKUs)
-- **Controller**: Apple-designed NAND controller (part of the SoC or a discrete controller on the board)
-  - Apple uses proprietary NAND controllers with custom FTL (Flash Translation Layer)
-  - On A9 and later, this is called ANS (Apple NAND Storage); the A8X likely uses an earlier version
+- **Controller**: ANS1 storage co-processor (ASP), integrated in the SoC
+  - Apple uses proprietary NAND controllers with custom FTL (Flash Translation Layer); on ANS1 the FTL runs in the co-processor firmware
+  - A7, A8 and A8X use ANS1 (`apple,s5l8960x-ans`, `apple,t7001-ans` in HoolockLinux); A11 uses NVMe
 - **Encryption**: Hardware AES-256 encryption in the DMA path
   - All NAND data is encrypted at rest using keys derived from the UID fused into the SoC
   - The Secure Enclave manages key hierarchy for Data Protection classes
 
 ### Linux Relevance
 
-- **Major blocker**: Apple's NAND controller uses a proprietary interface and FTL. No public Linux driver exists.
+- **Driver**: HoolockLinux has a WIP ANS1 driver (`drivers/block/asp.c`, branch `ans1`, 2026-09-03), not merged into its main branch and not integrated here. See [driver-gap.md](driver-gap.md#10-storage--nand).
 - The NAND is not accessible as a standard eMMC or UFS device
 - For Linux bringup, the standard approach is to boot entirely from a ramdisk loaded via USB, or to use USB storage, completely bypassing internal NAND
 - Asahi Linux on Apple Silicon Macs uses a reverse-engineered NVMe driver (ANS2/ANS3), but those are architecturally different from the A8X's NAND controller
@@ -389,7 +389,7 @@ The iPhone Wiki documents the device tree format. iOS device trees use a propert
 | Audio amp | MAX98721 | None | No upstream driver |
 | PMIC | Dialog 343S0675 | None | No driver; critical gap |
 | USB | DWC2 OTG | dwc2 | Driver exists; needs DT integration |
-| NAND storage | Apple proprietary | None | No driver; use ramdisk/USB storage |
+| NAND storage | Apple ANS1 | asp (HoolockLinux `ans1`, WIP) | Out of tree; use ramdisk/USB storage for now |
 | Accelerometer | Bosch BMA280 | bma180 (IIO) | Driver exists; needs DT |
 | Barometer | Bosch BMP280 | bmp280 (IIO) | Driver exists; needs DT |
 | Gyroscope | Unknown (likely Bosch) | Likely exists | Needs chip ID + DT |
