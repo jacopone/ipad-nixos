@@ -72,6 +72,14 @@ sudo ip link set usb0 up
 ssh root@192.168.7.2
 ```
 
+### Troubleshooting
+
+The boot path above has not been tested on hardware yet. Report results in an issue with the full output of `boot/load_linux.py`.
+
+**`Bad command: linux_cmdline` and the iPad stays in pongoOS.** The pongoOS running on the device has no Linux commands (`linux_cmdline`, `fdt`, `bootl`), so every upload command is rejected. Recent pongoOS builds, including the ones bundled with palera1n and HoolockLinux, removed them (PongoOS commit [455eabb](https://github.com/checkra1n/PongoOS/commit/455eabb1bce5bb695ca3192294823849605f209e)) and boot Linux through m1n1 instead. Load `boot/Pongo.bin` (`PongoOS-2.6.1-742d92a0`). `boot/load_linux.py` prints the pongoOS build from the USB serial number and stops at the first rejected command.
+
+**`bootl` on A8X is unproven.** pongoOS 2.6.1 warns that its Linux loader is only supported on iPhone 7 (A10), and the PongoOS maintainers removed it stating it never worked on 2.6.x. HoolockLinux boots A7–A11 devices through pongoOS → m1n1 → Linux instead; this repository does not implement that path yet. Details: [research/boot-chain.md](research/boot-chain.md#pongoos-linux-support-status).
+
 ## Project Structure
 
 ```

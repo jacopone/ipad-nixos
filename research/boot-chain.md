@@ -198,8 +198,10 @@ Sources:
 
 ### The load_linux.py Script
 
-pongoOS includes `scripts/load_linux.py`, a Python script that automates Linux kernel
-loading over USB. It communicates with pongoOS using USB control transfers.
+pongoOS up to tag 2.6.3 includes `scripts/load_linux.py`, a Python script that automates
+Linux kernel loading over USB. It communicates with pongoOS using USB control transfers.
+`boot/load_linux.py` is based on the 2.6.1 version and adds a read of the
+pongoOS stdout buffer after every command, so a rejected command aborts the upload.
 
 **Required arguments:**
 - `-k` / `--kernel`: Path to compressed kernel image (`Image.lzma`)
@@ -228,6 +230,37 @@ The script uses USB control transfer command IDs:
 
 Upon receiving "bootl", pongoOS calls `linux_prep_boot()` to prepare the environment, then
 jumps to the kernel entry point.
+
+### pongoOS Linux Support Status
+
+The `linux_cmdline`, `fdt` and `bootl` commands are not present in every pongoOS build.
+Verified against the PongoOS source and the binaries themselves (2026-10-23):
+
+| pongoOS build | Version string | Linux commands | Linux path |
+|---------------|----------------|----------------|------------|
+| `boot/Pongo.bin` ([2.6.1 release](https://github.com/checkra1n/PongoOS/releases/tag/2.6.1) asset, 254032 bytes) | `PongoOS-2.6.1-742d92a0` | `linux_cmdline`, `fdt`, `ramdisk`, `bootl` | `bootl` |
+| palera1n (`cdn.nickchan.lol/palera1n/artifacts/kpf/iOS15/Pongo.bin`) | `PongoOS-2.6.3-e98323f8` | none | `bootm` (m1n1) |
+| HoolockLinux (`docs/binaries/Pongo.bin`, commit bb492b0, 2025-02-22) | `PongoOS-2.6.3-bb492b00` | none | `bootm` (m1n1) |
+
+- In 2.6.1, `linux_commands_register()` runs in `shell_main()` before `usbloader_init()`
+  (`src/shell/main.c`), so the commands are always registered before USB input is accepted.
+  `Bad command: linux_cmdline` therefore means the device runs a build without them.
+- Commit [455eabb](https://github.com/checkra1n/PongoOS/commit/455eabb1bce5bb695ca3192294823849605f209e)
+  (2024-09-14, `iOS15` branch) removed `src/modules/linux` and `scripts/load_linux.py`, with
+  the message "Sandcastle never worked on pongoOS 2.6.x. Wash it away." The removal is not in
+  any tag: the 2.6.3 tag still has the commands, but builds from later `iOS15` commits also
+  report `2.6.3-<commit>` (the Makefile hardcodes the prefix). The version number alone does
+  not tell the two apart; the `Bad command:` reply does.
+- `linux_prep_boot()` in 2.6.1 prints "This is only supported on iPhone 7 for now and works
+  to a lesser extent on other A10 devices. Behavior on non-A10 devices is undefined!!"
+  The `bootl` path is untested on A8X.
+- HoolockLinux boots A7-A11 devices with an iOS15-branch pongoOS that loads
+  [m1n1](https://github.com/HoolockLinux/m1n1), which then boots Linux: `palera1n -lp -k Pongo.bin`,
+  then `/send m1n1-linux.bin` and `bootm` in `pongoterm`
+  ([SETUP_pongoOS.md](https://github.com/HoolockLinux/docs/blob/HEAD/tutorials/SETUP_pongoOS.md)).
+  Its A8X feature table lists the iPad Air 2 device tree, main display and buttons as
+  upstream since Linux 6.13 ([features/A8.md](https://github.com/HoolockLinux/docs/blob/HEAD/features/A8.md)).
+  This repository does not implement the m1n1 path yet.
 
 ### Device Tree: How Linux Gets Hardware Information
 
@@ -340,7 +373,7 @@ SoMainline/linux-apple-resources, now maintained as HoolockLinux/docs), specific
 | Mainline patches (Nick Chan) | 6.13+ | A7-A11 | Device trees merging into mainline |
 
 Sources:
-- https://github.com/checkra1n/PongoOS/blob/master/scripts/load_linux.py
+- https://github.com/checkra1n/PongoOS/blob/2.6.1/scripts/load_linux.py
 - https://lore.kernel.org/lkml/20240925071939.6107-3-towinchenmi@gmail.com/T/
 - https://patchew.org/linux/20240925071939.6107-1-towinchenmi@gmail.com/
 - https://www.phoronix.com/news/Linux-6.13-Better-Apple-Pre-M1
@@ -361,6 +394,12 @@ Sources:
   issue" on Linux hosts
 - Workaround: retry, use a direct USB connection (no hub), try different USB ports
 - A8X exploitation is generally reliable (more so than A11)
+
+**`Bad command: linux_cmdline` (or `fdt`, `bootl`), device stays in pongoOS:**
+- The running pongoOS has no Linux commands, typically a palera1n or HoolockLinux build
+  (see "pongoOS Linux Support Status" above); every upload command is rejected
+- Load `boot/Pongo.bin` (2.6.1) instead; `boot/load_linux.py` prints the build from the USB
+  serial number (`SRTG:[PongoOS-...]`) and stops at the first rejected command
 
 **pongoOS hangs after loading:**
 - Can happen if the pongoOS binary is incompatible with the SoC
