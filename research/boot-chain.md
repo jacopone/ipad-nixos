@@ -314,8 +314,8 @@ pongoOS decompresses the image in memory before jumping to it.
 
 ### initramfs / Ramdisk
 
-An initramfs is essential for iPad Linux boot since there are no native Linux filesystem
-drivers for Apple's NAND storage on A8X devices:
+An initramfs is essential for iPad Linux boot since the kernel built here has no driver for
+Apple's NAND storage on A8X devices (HoolockLinux's ANS1 driver is WIP, see driver-gap.md):
 - The initramfs provides a minimal root filesystem in memory
 - Typically contains BusyBox for basic shell utilities
 - Can include networking tools for NFS root or USB networking

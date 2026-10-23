@@ -118,7 +118,7 @@ M4 (touch) is the gate for standalone use without an external keyboard.
 - Touch input (needed for standalone tablet use)
 - Hardware-accelerated graphics
 - Audio output (without USB audio adapter)
-- Internal storage access
+- Internal storage access (a WIP ANS1 driver exists in HoolockLinux, see driver-gap.md)
 
 **What is not feasible:**
 - Untethered boot (checkm8 is permanently tethered)
@@ -142,7 +142,7 @@ NixOS supports aarch64 cross-compilation. The flake can target `aarch64-linux` f
 
 ### System Image Strategy
 
-Since internal NAND is inaccessible, the entire NixOS system runs from RAM:
+Internal NAND has no driver in this repository's kernel, so the entire NixOS system runs from RAM:
 
 **Option A: Fat initramfs**
 - Pack the complete NixOS closure into an initramfs (cpio archive)
