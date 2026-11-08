@@ -42,6 +42,10 @@
 
       # Cross-compiled packages for iPad (aarch64, 16KB pages)
       packages.${buildSystem} = {
+        # checkm8 exploit tool for the host (A5-A11, including 32-bit A6/A6X)
+        # Build: nix build .#gaster ; run: sudo result/bin/gaster pwn
+        gaster = pkgs.callPackage ./boot/gaster.nix {};
+
         # Linux kernel for iPad Air 2 (A8X)
         kernel = pkgsCross.callPackage ./kernel {};
 
