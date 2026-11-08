@@ -346,6 +346,36 @@ Sources:
 
 ---
 
+### 7f. Project Cascadia — Mainline Linux on 32-bit A5 (and A6X groundwork)
+
+**Repo**: https://github.com/rzxvx/Project-Cascadia (created 2026-08, active as of
+2026-11-04, ~650 commits). Not related to this repository's boot chain: ARMv7, no pongoOS.
+
+- iPad mini 1 (A5): Linux 6.12, both cores, touch, Wi-Fi, Bluetooth, audio, SGX543 GPU
+  with OpenGL ES 2.0, XFCE desktop. iPad 2 (A5): RAM-only USB shell.
+- Boot chain: checkm8 (Raspberry Pi Pico, since A5 needs it) or kDFU from jailbroken iOS,
+  patched iBSS and iBEC from the 8.4.1 IPSW, staging loader built on teutekeune's
+  iBSSloader, `zImage-dtb` at 0x80008000, embedded Alpine initramfs. Tethered.
+- A6X (iPad 4): declared next target (issue #6, 2026-10-10). PR #7 merged a p102ap DTS
+  translated from the Apple Device Tree and A6X support in `adt_to_dts.py`. No kernel
+  bring-up yet. Hardware map in `research/compatibility-matrix.md`, Generation 2.
+- Also hosts A12 (iPhone XR, contributed) and A13 (iPhone 11) trees via m1n1, which
+  overlap HoolockLinux's territory.
+
+**Relevance to iPad Air 2**: none for the boot chain. Relevant as the only live ARMv7
+effort for the 13 32-bit iPad variants, and for its Z2 touch and BCM4334 HSIC work.
+
+### 7g. a6-handheld-linux — Linux on iPhone 5 (A6)
+
+**Repo**: https://github.com/landrucode/a6-handheld-linux (2026-10-15, single commit).
+iPhone5,2 (N42AP) only. Works: both cores, software-rendered display, touch, audio,
+Wi-Fi (brcmfmac over HSIC), USB networking, charging policy; desktop on labwc. No GPU,
+no backlight, no Bluetooth. Boot: checkm8 (any tool), NyanSatan's checkm8_bootkit loads
+iOS 8.4.1 iBSS and iBEC, then a Linux kernel in A6 kernelcache format with the device
+tree attached. Kernel sources in-repo (mainline at a pinned commit). Author states it has
+not been rebuilt from a fresh checkout. Closest existing sibling to an iPad 4 port: same
+Swift cores and iBoot generation; display (CLCD plus eDP) and GPU (SGX554MP4) differ.
+
 ## 8. Corellium — Commercial iOS Virtualization
 
 **Purpose**: Commercial platform providing full iOS device virtualization for security research, app testing, and forensics.
