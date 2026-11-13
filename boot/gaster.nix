@@ -16,13 +16,13 @@
 
 stdenv.mkDerivation {
   pname = "gaster";
-  version = "unstable-2024-01-01";
+  version = "unstable-2023-02-02";
 
   src = fetchFromGitHub {
     owner = "0x7ff";
     repo = "gaster";
-    rev = "main";
-    hash = "sha256-0000000000000000000000000000000000000000000=";
+    rev = "7fffffff38a1bed1cdc1c5bae0df70f14395129b";
+    hash = "sha256-TZu4IoV7Zu30mEW+ctPtpYjhF8iRTjioz8HAKXKcRdo=";
   };
 
   nativeBuildInputs = [ xxd ];
