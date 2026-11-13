@@ -11,16 +11,18 @@ Sources: Apple tech specs, iFixit teardowns, Nick Chan's kernel device tree patc
 ## Important Notes
 
 **32-bit vs 64-bit**: The A5, A5X, A6, and A6X SoCs are 32-bit ARMv7. The A7 through A11
-are 64-bit ARMv8-A (AArch64). All current Linux bring-up work (Nick Chan / HoolockLinux /
-Konrad Dybcio) targets AArch64 only (A7+). The 32-bit iPads are checkm8-vulnerable but
-have no Linux device tree work and are not practical targets.
+are 64-bit ARMv8-A (AArch64). The upstream Linux bring-up work this repository builds on
+(Nick Chan / HoolockLinux / Konrad Dybcio) targets AArch64 only (A7+). The 32-bit iPads
+are checkm8-vulnerable and, since 2026, have a separate mainline ARMv7 effort (Project
+Cascadia, see Generation 1 and 2 below) that this repository's AArch64 boot chain does
+not cover.
 
 **Connector transition**: The 30-pin dock connector was used through iPad 3 (3rd gen).
 Lightning was introduced with iPad 4 (4th gen) and iPad Mini 1 in late 2012.
 
 ---
 
-## Generation 1: Apple A5 / A5X (2011-2012) -- 32-bit, No Linux Support
+## Generation 1: Apple A5 / A5X (2011-2012) -- 32-bit, Out-of-Tree Linux (Project Cascadia)
 
 ### A5 (S5L8940X / S5L8942X / S5L8947X)
 
@@ -42,14 +44,20 @@ Lightning was introduced with iPad 4 (4th gen) and iPad Mini 1 in late 2012.
 | iPad 3 (CDMA) | iPad3,2 | J2 | A5X | 1 GB | 2012 | 9.7" | 2048x1536 | 30-pin | Wi-Fi + Cellular |
 | iPad 3 (GSM) | iPad3,3 | J2a | A5X | 1 GB | 2012 | 9.7" | 2048x1536 | 30-pin | Wi-Fi + Cellular |
 
-**Linux status**: None. 32-bit ARMv7. No device tree work exists. checkm8-a5 exploit
-variant works but requires different tooling (Raspberry Pi Pico for A5/A5X DFU). Not a
-practical Linux target due to 32-bit architecture, 512 MB - 1 GB RAM, and lack of any
-existing bring-up work.
+**Linux status** (checked 2026-11-08): nothing upstream. Out of tree,
+[Project Cascadia](https://github.com/rzxvx/Project-Cascadia) runs mainline Linux 6.12
+on the iPad mini 1 (iPad2,5, P105AP): both cores, touch, Wi-Fi, Bluetooth, speakers,
+battery, SGX543 GPU (OpenGL ES 2.0) and XFCE; the iPad 2 Wi-Fi (iPad2,1, K93AP) boots
+to a RAM-only USB shell. Entry is checkm8 from a Raspberry Pi Pico (checkm8-a5, LukeZGD)
+or kDFU from a jailbroken iOS; then patched iBSS and iBEC from the 8.4.1 IPSW, a staging
+loader (teutekeune's iBSSloader) and a `zImage-dtb` at 0x80008000 with an embedded
+Alpine initramfs. OrchardLinux is packaging the same patch series as an `armv7-a5`
+platform (Nov 2026). The A5X (iPad 3) has an ADT parser entry (Cascadia PR #25) and no
+boot. None of this uses pongoOS or this repository's AArch64 chain.
 
 ---
 
-## Generation 2: Apple A6X (2012) -- 32-bit, No Linux Support
+## Generation 2: Apple A6X (2012) -- 32-bit, Linux Groundwork Only
 
 ### A6X (S5L8955X)
 
@@ -61,7 +69,38 @@ existing bring-up work.
 
 Note: No A6 (non-X) iPads exist. The A6 was used only in iPhone 5 and iPhone 5c.
 
-**Linux status**: None. 32-bit ARMv7. Same limitations as A5/A5X generation.
+**Linux status** (checked 2026-11-08): no Linux boot on any iPad 4 is documented.
+Groundwork exists:
+
+- [Project Cascadia](https://github.com/rzxvx/Project-Cascadia) (rzxvx, created 2026-08,
+  active) runs mainline Linux 6.12 on the iPad mini 1 (A5) with touch, Wi-Fi, Bluetooth,
+  audio, SGX543 GPU and XFCE, and boots the iPad 2 (A5) to a RAM-only USB shell. The
+  maintainer names the iPad 4 as the next target (issue #6, 2026-10-10): checkm8 runs
+  from a PC without the Raspberry Pi Pico the A5 needs, and the SGX554MP4 shares its
+  architecture with the SGX543. PR #7 (merged 2026-10-10) adds `dts/p102ap.dts`
+  (iPad3,5) translated from the Apple Device Tree and teaches `adt_to_dts.py` the
+  `s5l8955x`. No A6X kernel bring-up yet; the maintainer has no device.
+- [a6-handheld-linux](https://github.com/landrucode/a6-handheld-linux) (landrucode,
+  2026-10-15, one commit) boots Linux on the iPhone 5 (A6, S5L8950X, same Swift cores
+  as the A6X): both cores, software-rendered display, touch, audio, Wi-Fi (brcmfmac over
+  HSIC), USB networking, charging. No GPU. Tethered: checkm8, then iOS 8.4.1 iBSS and
+  iBEC loaded by NyanSatan's checkm8_bootkit, then a Linux kernel wrapped in the A6
+  kernelcache format with the device tree attached. Kernel sources are in the repo.
+- Tooling: [gaster](https://github.com/0x7ff/gaster) supports CPID 0x8950 (A6) and
+  0x8955 (A6X); [checkm8_bootkit](https://github.com/NyanSatan/checkm8_bootkit) boots an
+  arbitrary iBoot on the S5L8955X.
+
+A6X-specific facts from the Cascadia issue #6 hardware map (P102AP, iOS 10.3.4
+IORegistry): interrupt controller `aic,1` at 0x3f200000 (same driver as A5); dual
+`apple,swift` cores with integrated L2 (no PL310); touch is Z2 on `spi3` (A5 uses
+`spi1`); display is CLCD plus eDP at 0x39500000, 2048x1536; GPU SGX554MP4 at
+0x35100000 behind DART IOMMUs; Wi-Fi BCM4334 over HSIC behind EHCI; Bluetooth on
+`uart3`.
+
+Porting estimate: a RAM-only USB shell is weeks of work on top of Cascadia's A5 chain
+(gaster from the PC, patched iBSS and iBEC from the iPad3,x 8.4.1 IPSW, Linux 6.12
+`zImage-dtb` with the p102ap DTS); display, touch and Wi-Fi are substantially more. This
+is a separate ARMv7 project, outside this repository's AArch64 boot chain.
 
 ---
 
@@ -250,7 +289,7 @@ Linux (upstream 6.18), which A7-A10X devices lack.
 |---|---|---|---|---|
 | A5 | 32-bit ARMv7 | 7 (iPad 2 x4, iPad Mini 1 x3) | No | No |
 | A5X | 32-bit ARMv7 | 3 (iPad 3 x3) | No | No |
-| A6X | 32-bit ARMv7 | 3 (iPad 4 x3) | No | No |
+| A6X | 32-bit ARMv7 | 3 (iPad 4 x3) | Out of tree (Cascadia p102ap DTS, no boot) | Not with this repo; see Generation 2 |
 | A7 | 64-bit ARMv8 | 9 (iPad Air x3, iPad Mini 2 x3, iPad Mini 3 x3) | Yes (6.13) | Yes (1 GB RAM is limiting) |
 | A8 | 64-bit ARMv8 | 2 (iPad Mini 4 x2) | Yes (6.13) | Yes |
 | A8X | 64-bit ARMv8 | 2 (iPad Air 2 x2) | Yes (6.13) | Yes (primary target) |
@@ -262,7 +301,7 @@ Linux (upstream 6.18), which A7-A10X devices lack.
 
 **Total checkm8-vulnerable iPad models: 40** (counting Wi-Fi/Cellular/China variants)
 **Total with Linux device trees: 27** (all A7-A10X iPads)
-**Total 32-bit (not practical): 13** (A5/A5X/A6X)
+**Total 32-bit (outside this repository's AArch64 chain): 13** (A5/A5X/A6X; see Project Cascadia notes)
 
 ---
 
@@ -389,7 +428,7 @@ Each specific model variant already has its own .dts file in the kernel patches.
 |---|---|---|
 | **iPad Pro 12.9" (1st gen)** | A9X, 4 GB RAM. Good specs but large and early Pro. | Medium -- A9X DT exists |
 | **iPad Pro 9.7"** | A9X, only 2 GB RAM. Different touch from non-Pro. | Medium -- no RAM advantage over Air 2 |
-| **iPad 2, 3, 4, Mini 1** | 32-bit, low RAM, no Linux work. | Not recommended |
+| **iPad 2, 3, 4, Mini 1** | 32-bit, 512 MB-1 GB RAM. Mainline ARMv7 work exists only in Project Cascadia (mini 1 usable, iPad 2 shell, iPad 4 DTS only). | Not with this repo's boot chain |
 
 ---
 
