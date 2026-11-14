@@ -1,0 +1,36 @@
+# Patch against upstream libimobiledevice/libirecovery (LGPL-2.1),
+# commit 3301fe7d834a485b368cd7edf20f7535d6d598b4, src/libirecovery.c.
+# Apply with `git apply` inside a checkout of that project at that commit.
+# This patch file itself is original (jacopone/ipad-nixos) and MIT-licensed
+# like the rest of this repo; it is not a redistribution of libirecovery's
+# source -- see README.md in this directory for why the change is needed.
+diff --git a/src/libirecovery.c b/src/libirecovery.c
+index 72d8072..e6fddef 100644
+--- a/src/libirecovery.c
++++ b/src/libirecovery.c
+@@ -2383,6 +2383,17 @@ irecv_error_t irecv_open_with_ecid(irecv_client_t* pclient, uint64_t ecid)
+ 	CFRunLoopAddSource(CFRunLoopGetCurrent(), client->async_event_source, kCFRunLoopDefaultMode);
+ #endif
+ 
++	/* LOCAL PATCH (jacopone/ipad-nixos, A6X bring-up): skip claim_interface +
++	 * set_interface_alt_setting for a freshly-pwned-DFU device. Checkm8_bootkit
++	 * only ever calls irecv_usb_control_transfer() (control transfers to ep0),
++	 * which does not require an interface claim on Linux, and the A6X's
++	 * exploited bootrom USB stack appears not to answer the SET_INTERFACE
++	 * request this call used to make, hanging forever. gaster (0x7ff/gaster),
++	 * which never claims an interface and always works against this device,
++	 * is the evidence for this. Upstream behavior is unchanged for every
++	 * caller except irecv_open_with_ecid(), which no longer claims an
++	 * interface at all; callers needing bulk transfers would need it back. */
++	if (0) {
+ 	if (client->mode == IRECV_K_DFU_MODE || client->mode == IRECV_K_PORT_DFU_MODE || client->mode == IRECV_K_WTF_MODE || client->mode == KIS_PRODUCT_ID) {
+ 		error = irecv_usb_set_interface(client, 0, 0);
+ 	} else {
+@@ -2391,6 +2402,7 @@ irecv_error_t irecv_open_with_ecid(irecv_client_t* pclient, uint64_t ecid)
+ 			error = irecv_usb_set_interface(client, 1, 1);
+ 		}
+ 	}
++	}
+ 
+ 	if (error != IRECV_E_SUCCESS) {
+ 		debug("Failed to set interface, error %d\n", error);
