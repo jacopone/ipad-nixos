@@ -69,6 +69,31 @@ boot. None of this uses pongoOS or this repository's AArch64 chain.
 
 Note: No A6 (non-X) iPads exist. The A6 was used only in iPhone 5 and iPhone 5c.
 
+### A physical iPad 4 (A1460 / iPad3,6 / P103) is on hand
+
+Confirmed 2026-11-14 on a project maintainer's own device, model number read off the
+case and cross-checked against [Apple's model-identification page](https://support.apple.com/en-us/108043):
+A1460 is the iPad (4th generation) Wi-Fi + Cellular (MM), i.e. `iPad3,6` / P103 in the
+table above. `gaster pwn` read back **CPID 0x8955**, confirming the SoC is the A6X
+(S5L8955X) and not the A8X this repository otherwise targets. The device was running
+**iOS 10.3.4** at the time.
+
+This matches the firmware version of the P102AP (iPad3,5, the Wi-Fi+Cellular/GSM
+sibling) that [Project Cascadia issue #6](https://github.com/rzxvx/Project-Cascadia/issues/6)
+used to produce `devices/a5/dts/p102ap.dts` and the ADT-parser generalization in PR #7 —
+both merged 2026-10-10. Same iOS build on both devices means the Apple Device Tree
+layout that DTS was derived from should carry over closely to this P103 unit; P102 vs
+P103 is understood to differ only in cellular/baseband hardware (modem, bands), not in
+CPU, display, touch or Wi-Fi, but that has not been confirmed by diffing the two
+devices' own ADTs.
+
+Project Cascadia lists the iPad 4 under "Next devices" in its README and has no A6X
+kernel bring-up yet; as of issue #6 the maintainer had no A6X hardware. Checkm8 and the
+device's CPID were confirmed working against this unit via `gaster` (0x7ff/gaster
+supports CPID 0x8950/A6 and 0x8955/A6X); no further boot-chain work has been attempted
+here. Porting path and estimate: see "Generation 2" above and
+[landscape.md §7f/7g](landscape.md).
+
 **Linux status** (checked 2026-11-08): no Linux boot on any iPad 4 is documented.
 Groundwork exists:
 
