@@ -9,6 +9,7 @@ Boot NixOS on old iPads (2011-2017, A5–A11 chips) via checkm8 bootrom exploit,
 - **Primary target**: iPad Air 2 (A8X, 2014) — 3-core ARM64, 2GB RAM, PowerVR GXA6850 GPU
 - **Exploit**: checkm8 (permanent, unpatchable bootrom vulnerability for A5–A11)
 - **Boot chain**: checkm8 → pongoOS → Linux kernel → NixOS userland
+- **Secondary track (research only, no code yet)**: iPad 4 (A6X, 2012) — 32-bit ARMv7, a device physically on hand. Different boot chain entirely: checkm8 → patched iBSS/iBEC → kernel, no pongoOS (A6X is 32-bit; pongoOS targets A7–A11). See `research/a6x-*.md`. Does not change the A8X focus below.
 
 ## Project Structure
 
@@ -19,7 +20,10 @@ ipad-nixos/
 │   ├── hardware.md    # iPad Air 2 hardware mapping
 │   ├── boot-chain.md  # Full boot path documentation
 │   ├── driver-gap.md  # Driver status matrix
-│   └── feasibility.md # Final assessment and roadmap
+│   ├── feasibility.md # Final assessment and roadmap
+│   ├── a6x-boot-chain.md  # Secondary track: iPad 4/A6X boot path (not pongoOS)
+│   ├── a6x-driver-gap.md  # Secondary track: iPad 4/A6X driver status
+│   └── a6x-feasibility.md # Secondary track: iPad 4/A6X roadmap
 ├── boot/              # Boot chain tools and configs
 ├── kernel/            # Kernel configs and patches
 ├── nixos/             # NixOS configuration for iPad
@@ -102,4 +106,4 @@ NixOS ThinkPad ──USB──► iPad Air 2
 - Document every finding in research/ directory
 - Be honest about blockers and difficulty
 - Cross-reference multiple sources before concluding anything
-- Focus on iPad Air 2 (A8X) specifically — don't generalize across all iPads
+- Focus on iPad Air 2 (A8X) specifically for the primary boot chain — don't generalize across all iPads. The A6X track (`research/a6x-*.md`) is a deliberately separate, parallel effort with its own boot chain; keep its findings out of the A8X-scoped docs and vice versa.
